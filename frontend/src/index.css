@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f3f8fd;
+  --bg-deep: #dcecff;
+  --surface: #ffffff;
+  --panel: #ffffff;
+  --ink: #0a1018;
+  --muted: #5b6675;
+  --accent: #9bd5ff;
+  --accent-dark: #63afe7;
+  --accent-soft: rgba(155, 213, 255, 0.18);
+  --midnight: #05070c;
+  --line: rgba(8, 15, 25, 0.09);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: "Outfit", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(155, 213, 255, 0.28), transparent 26%),
+    radial-gradient(circle at left 18%, rgba(255, 255, 255, 0.78), transparent 22%),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 48%, #edf5fd 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(8, 15, 25, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 15, 25, 0.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), transparent 88%);
+}
+
+#root {
+  position: relative;
+  isolation: isolate;
+}
+
+::selection {
+  background: rgba(155, 213, 255, 0.28);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight text-slate-950;
+  }
+
+  a {
+    @apply transition-colors;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8;
+  }
+
+  .panel-card {
+    border-radius: 28px;
+    @apply border border-slate-900/5 bg-white/80 shadow-soft backdrop-blur;
+  }
+
+  .accent-button {
+    @apply inline-flex items-center justify-center rounded-full border border-[#b7e1ff] bg-[#05070c] px-5 py-3 text-sm font-semibold text-white shadow-warm transition hover:-translate-y-0.5 hover:border-[#d7eeff] hover:bg-[#101726] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .ghost-button {
+    @apply inline-flex items-center justify-center rounded-full border border-slate-300/90 bg-white/90 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-[#8ecaff] hover:bg-[#eff7ff] hover:text-slate-950;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#8ecaff] focus:ring-4 focus:ring-[#8ecaff]/15;
+  }
+
+  .muted-label {
+    letter-spacing: 0.22em;
+    @apply mb-2 block text-xs font-semibold uppercase text-slate-500;
+  }
+
+  .status-pill {
+    letter-spacing: 0.18em;
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase;
+  }
+}
+
