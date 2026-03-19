@@ -154,6 +154,17 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/stylenet_store
 ## Verified Locally In This Workspace
 - Frontend dependencies installed successfully with `npm install`
 - Frontend production build passed with `npm run build`
-- A Python runtime was not available in this shell, so Django could not be executed here even though the project files are in place
+- Django configuration check passed with `py -3 backend/manage.py check`
+
+## Deployment
+Deployment-ready config files are included for:
+
+- Vercel frontend
+- Render backend + PostgreSQL
+- Railway backend
+- Docker Compose
+
+See `DEPLOYMENT.md` for the full setup guide.
+
 
 

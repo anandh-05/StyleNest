@@ -1,4 +1,6 @@
 from django.db.models import Avg, Count, Prefetch
+from django.db import connections
+from django.db.utils import OperationalError
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -136,4 +138,27 @@ class PaymentSimulationAPIView(APIView):
                 "payment_reference": payment_reference,
                 "message": "Payment simulated successfully. Replace this endpoint with Razorpay or Stripe server-side integration later.",
             }
+        )
+
+
+class HealthCheckAPIView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def get(self, request, *args, **kwargs):
+        database_status = "up"
+        response_status = status.HTTP_200_OK
+
+        try:
+            connections["default"].cursor()
+        except OperationalError:
+            database_status = "down"
+            response_status = status.HTTP_503_SERVICE_UNAVAILABLE
+
+        return Response(
+            {
+                "status": "ok" if response_status == status.HTTP_200_OK else "degraded",
+                "database": database_status,
+            },
+            status=response_status,
         )

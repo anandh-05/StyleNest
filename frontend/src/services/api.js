@@ -2,7 +2,8 @@ import axios from "axios";
 
 import { clearStoredAuth, getStoredAuth, setStoredAuth } from "../utils/storage";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const rawBaseURL = import.meta.env.VITE_API_URL || "";
+const baseURL = rawBaseURL.replace(/\/$/, "");
 
 const api = axios.create({
   baseURL,

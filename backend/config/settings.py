@@ -1,16 +1,75 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse
 
 import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 
-raw_allowed_hosts = os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
-ALLOWED_HOSTS = [host.strip() for host in raw_allowed_hosts.split(",") if host.strip()]
+def env_bool(name, default=False):
+    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def env_list(name, default=""):
+    value = os.getenv(name, default)
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def unique_list(values):
+    return list(dict.fromkeys(values))
+
+
+def hostname_from_value(value):
+    if not value:
+        return ""
+
+    parsed = urlparse(value if "://" in value else f"https://{value}")
+    return parsed.netloc.split("@")[-1].split(":")[0].strip()
+
+
+def auto_allowed_hosts():
+    return [
+        host
+        for host in [
+            hostname_from_value(os.getenv("RENDER_EXTERNAL_HOSTNAME", "")),
+            hostname_from_value(os.getenv("RENDER_EXTERNAL_URL", "")),
+            hostname_from_value(os.getenv("RAILWAY_PUBLIC_DOMAIN", "")),
+            hostname_from_value(os.getenv("VERCEL_URL", "")),
+        ]
+        if host
+    ]
+
+
+def auto_csrf_origins():
+    origins = []
+
+    for value in [
+        os.getenv("RENDER_EXTERNAL_URL", ""),
+        os.getenv("SITE_URL", ""),
+    ]:
+        if value and "://" in value:
+            origins.append(value.rstrip("/"))
+
+    for value in [
+        os.getenv("RENDER_EXTERNAL_HOSTNAME", ""),
+        os.getenv("RAILWAY_PUBLIC_DOMAIN", ""),
+        os.getenv("VERCEL_URL", ""),
+    ]:
+        host = hostname_from_value(value)
+        if host:
+            origins.append(f"https://{host}")
+
+    return unique_list(origins)
+
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-change-me")
+DEBUG = env_bool("DJANGO_DEBUG", True)
+
+ALLOWED_HOSTS = unique_list(
+    env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost") + auto_allowed_hosts()
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -28,6 +87,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -76,8 +136,13 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -96,15 +161,42 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-    "http://127.0.0.1:4173",
-    "http://localhost:4173",
-]
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = unique_list(
+    env_list(
+        "CORS_ALLOWED_ORIGINS",
+        ",".join(
+            [
+                "http://127.0.0.1:5173",
+                "http://localhost:5173",
+                "http://127.0.0.1:4173",
+                "http://localhost:4173",
+            ]
+        ),
+    )
+)
+CORS_ALLOWED_ORIGIN_REGEXES = env_list("CORS_ALLOWED_ORIGIN_REGEXES")
+CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", DEBUG)
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-]
+CSRF_TRUSTED_ORIGINS = unique_list(
+    env_list(
+        "CSRF_TRUSTED_ORIGINS",
+        ",".join(
+            [
+                "http://127.0.0.1:5173",
+                "http://localhost:5173",
+            ]
+        ),
+    )
+    + auto_csrf_origins()
+)
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", False)
+SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_SECURE_HSTS_SECONDS", "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", False
+)
+SECURE_HSTS_PRELOAD = env_bool("DJANGO_SECURE_HSTS_PRELOAD", False)
